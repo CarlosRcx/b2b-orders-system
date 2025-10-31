@@ -1,0 +1,80 @@
+version: '3.8'
+
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: b2b-mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpassword
+      MYSQL_DATABASE: b2b_orders
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql-data:/var/lib/mysql
+      - ./db/schema.sql:/docker-entrypoint-initdb.d/1-schema.sql
+      - ./db/seed.sql:/docker-entrypoint-initdb.d/2-seed.sql
+    networks:
+      - b2b-network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-prootpassword"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  customers-api:
+    build:
+      context: ./customers-api
+      dockerfile: Dockerfile
+    container_name: customers-api
+    ports:
+      - "3001:3001"
+    environment:
+      - NODE_ENV=development
+      - PORT=3001
+      - DB_HOST=mysql
+      - DB_PORT=3306
+      - DB_USER=root
+      - DB_PASSWORD=rootpassword
+      - DB_NAME=b2b_orders
+      - JWT_SECRET=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6ImN1c3QxMjM0IiwidXNlcm5hbWUiOiJ0ZXN0QHVzZXIiLCJpYXQiOjE3MzA1NTM2MDAsImV4cCI6MTczMDU1NzIwMH0.xkZc8CYV4cZy6aM4Ozq8N4pOcez5c6S1uM0M3C4uRck
+      - SERVICE_TOKEN=internal-service-token-2025
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - b2b-network
+    volumes:
+      - ./customers-api/src:/app/src
+
+  orders-api:
+    build:
+      context: ./orders-api
+      dockerfile: Dockerfile
+    container_name: orders-api
+    ports:
+      - "3002:3002"
+    environment:
+      - NODE_ENV=development
+      - PORT=3002
+      - DB_HOST=mysql
+      - DB_PORT=3306
+      - DB_USER=root
+      - DB_PASSWORD=rootpassword
+      - DB_NAME=b2b_orders
+      - JWT_SECRET=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6ImN1c3QxMjM0IiwidXNlcm5hbWUiOiJ0ZXN0QHVzZXIiLCJpYXQiOjE3MzA1NTM2MDAsImV4cCI6MTczMDU1NzIwMH0.xkZc8CYV4cZy6aM4Ozq8N4pOcez5c6S1uM0M3C4uRck
+      - SERVICE_TOKEN=internal-service-token-2025
+      - CUSTOMERS_API_BASE=http://customers-api:3001
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - b2b-network
+    volumes:
+      - ./orders-api/src:/app/src
+
+volumes:
+  mysql-data:
+
+networks:
+  b2b-network:
+    driver: bridge

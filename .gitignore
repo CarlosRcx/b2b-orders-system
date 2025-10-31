@@ -1,0 +1,7 @@
+lambda-orchestrator/node_modules/
+lambda-orchestrator/node_modules/.package-lock.json
+lambda-orchestrator/package-lock.json
+
+customers-api/.env.example
+lambda-orchestrator/.env
+orders-api/src/.env.example

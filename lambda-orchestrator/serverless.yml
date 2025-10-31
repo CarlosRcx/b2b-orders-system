@@ -1,0 +1,32 @@
+service: b2b-lambda-orchestrator
+
+frameworkVersion: '3'
+
+provider:
+  name: aws
+  runtime: nodejs20.x
+  region: us-east-1
+  stage: dev
+  memorySize: 256
+  timeout: 30
+  environment:
+    CUSTOMERS_API_BASE: http://localhost:3001
+    ORDERS_API_BASE: http://localhost:3002
+    SERVICE_TOKEN: internal-service-token-2025
+    NODE_ENV: development
+
+functions:
+  orchestrator:
+    handler: handler.createAndConfirmOrder
+    events:
+      - httpApi:
+          path: /orchestrator/create-and-confirm-order
+          method: post
+
+plugins:
+  - serverless-offline
+
+custom:
+  serverless-offline:
+    httpPort: 3000
+    lambdaPort: 3003
